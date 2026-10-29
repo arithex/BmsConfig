@@ -3,7 +3,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Falcon BMS Config Editor"
         Width="1600" Height="1000" MinWidth="1000" MinHeight="600"
-        WindowStartupLocation="CenterScreen"
         Icon="Config.ico"
         FontFamily="{StaticResource UiFont}" FontSize="14"
         Background="{DynamicResource WindowBackground}"
