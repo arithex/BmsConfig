@@ -244,7 +244,7 @@
                                 <Button x:Name="FillDefaultButton" Content="Fill with default" MinWidth="150" Margin="0,0,12,8" Click="OnFillDefaultClick"
                                         ToolTip="Put the default value (from Falcon BMS.cfg) into the editor" />
                                 <Button x:Name="RevertButton" Content="Remove override" MinWidth="150" Margin="0,0,12,8" Click="OnRevertClick"
-                                        ToolTip="Remove this param from the selected file(s), reverting it to the default" />
+                                        ToolTip="Remove this param from the selected file(s), reverting it to the default. Lines with a trailing comment are commented out, rather than deleted." />
                             </WrapPanel>
 
                             <TextBlock x:Name="SaveFeedback" Style="{StaticResource SecondaryText}" Margin="0,6,0,0" TextWrapping="Wrap" />

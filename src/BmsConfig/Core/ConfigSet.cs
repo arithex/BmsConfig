@@ -42,6 +42,11 @@ namespace BmsConfig.Core
         /// <summary>Effective value in Falcon BMS VR.cfg, or null.</summary>
         public string VrValue { get; internal set; }
 
+        /// <summary>True if User.cfg has a commented-out set line for this param (above the cut line).</summary>
+        public bool UserCommentedOut { get; internal set; }
+        /// <summary>True if VR.cfg has a commented-out set line for this param.</summary>
+        public bool VrCommentedOut { get; internal set; }
+
         /// <summary>Order of first appearance (Falcon BMS.cfg first, then User.cfg, then VR.cfg).</summary>
         public int Ordinal { get; internal set; }
 
@@ -182,6 +187,14 @@ namespace BmsConfig.Core
                     if (e.Category == OtherCategory)
                         hasOther = true;
                 }
+                else if (line.Kind == CfgLineKind.CommentedSet && !belowCut)
+                {
+                    // Listed even if it's not in Falcon BMS.cfg, so the user can set it again.
+                    ParamEntry e = GetOrAdd(line, OtherCategory);
+                    e.UserCommentedOut = true;
+                    if (e.Category == OtherCategory)
+                        hasOther = true;
+                }
             }
 
             // Falcon BMS VR.cfg: overrides, only when launched in VR.
@@ -191,6 +204,13 @@ namespace BmsConfig.Core
                 {
                     ParamEntry e = GetOrAdd(line, OtherCategory);
                     e.VrValue = line.RawValue;
+                    if (e.Category == OtherCategory)
+                        hasOther = true;
+                }
+                else if (line.Kind == CfgLineKind.CommentedSet)
+                {
+                    ParamEntry e = GetOrAdd(line, OtherCategory);
+                    e.VrCommentedOut = true;
                     if (e.Category == OtherCategory)
                         hasOther = true;
                 }
@@ -252,7 +272,8 @@ namespace BmsConfig.Core
 
         /// <summary>
         /// Removes a param from User.cfg or VR.cfg (reverting it to the default), and saves immediately.
-        /// In User.cfg, only lines above the Launcher cut line are removed.
+        /// Lines with a trailing comment (eg. the user's notes) are commented out rather than deleted.
+        /// In User.cfg, only lines above the Launcher cut line are affected.
         /// </summary>
         public static bool RemoveValue(string folder, CfgFile file, string name)
         {
