@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Media.Imaging;
 using BmsConfig.Core;
 using Microsoft.Win32;
 using ValueSource = BmsConfig.Core.ValueSource;
@@ -38,6 +39,8 @@ namespace BmsConfig
             VersionText.Text = version;
             Title = "Falcon BMS Config Editor  " + version;
 
+            LogoImage.Source = LoadLargestIconFrame();
+
             _view = CollectionViewSource.GetDefaultView(_items);
             _view.Filter = FilterItem;
             ParamList.ItemsSource = _view;
@@ -61,6 +64,27 @@ namespace BmsConfig
 
             UpdateEmptyStates();
             ShowDetail(null);
+        }
+
+        /// <summary>
+        /// The largest image in Config.ico (its 256px PNG frame), for the header logo.  An Image element pointed
+        /// directly at the .ico would just use its first frame, which is typically a small one.
+        /// </summary>
+        static BitmapSource LoadLargestIconFrame()
+        {
+            try
+            {
+                BitmapDecoder decoder = BitmapDecoder.Create(new Uri("pack://application:,,,/Config.ico"),
+                    BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+                return decoder.Frames
+                    .OrderByDescending(f => f.PixelWidth)
+                    .ThenByDescending(f => f.Format.BitsPerPixel)
+                    .First();
+            }
+            catch (Exception)
+            {
+                return null; // no logo is better than no app
+            }
         }
 
         // ---- startup / install selection -----------------------------------------------------
