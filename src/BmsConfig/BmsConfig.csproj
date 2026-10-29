@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>Config</AssemblyName>
+    <RootNamespace>BmsConfig</RootNamespace>
+    <LangVersion>7.3</LangVersion>
+
+    <!-- AnyCPU, 64-bit preferred (runs natively as x64 or ARM64, and as x86 on 32-bit Windows). -->
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Config.ico</ApplicationIcon>
+
+    <Product>Falcon BMS Config Editor</Product>
+    <Company>Benchmark Sims</Company>
+    <Version>1.0.0</Version>
+
+    <!-- Single exe: no app.config, no satellite assemblies, no pdb next to the exe in Release. -->
+    <GenerateSupportedRuntime>false</GenerateSupportedRuntime>
+    <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <DebugType Condition="'$(Configuration)' == 'Release'">embedded</DebugType>
+
+    <!-- Allow building on non-Windows hosts (eg. CI); the output is identical. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Build-time only: .NET Framework reference assemblies, so no targeting pack needs to be installed. Not shipped. -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Config.ico" />
+    <Resource Include="Logo.png" />
+  </ItemGroup>
+
+</Project>
