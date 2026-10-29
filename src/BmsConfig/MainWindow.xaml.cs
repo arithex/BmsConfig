@@ -536,7 +536,7 @@ namespace BmsConfig
             }
             _suppressEvents = false;
 
-            FillDefaultButton.IsEnabled = entry.BmsValue != null && !isBool && !isEnum;
+            FillDefaultButton.IsEnabled = entry.BmsValue != null;
             SaveFeedback.Text = "";
             UpdateButtons();
         }
@@ -562,10 +562,9 @@ namespace BmsConfig
         {
             ParamEntry entry = SelectedEntry;
             bool hasTargets = SaveTargets.Any();
-            bool textValid = TextEditor.Visibility != Visibility.Visible || EditorError.Text.Length == 0;
+            bool inputValid = EditorInput != null && EditorError.Text.Length == 0;
 
-            ApplyButton.IsEnabled = entry != null && hasTargets && textValid;
-            ApplyButton.Visibility = TextEditor.Visibility; // bool & enum edits are applied immediately
+            ApplyButton.IsEnabled = entry != null && hasTargets && inputValid;
             RevertButton.IsEnabled = entry != null && !entry.IsFeatureFlag && hasTargets
                 && ((SaveToUser.IsChecked == true && entry.UserValue != null && !entry.UserValueFromLauncher)
                     || (SaveToVr.IsChecked == true && entry.VrValue != null));
@@ -602,28 +601,58 @@ namespace BmsConfig
             }
         }
 
-        void OnApplyClick(object sender, RoutedEventArgs e) { ApplyInput(TextEditor.Text); }
-
-        void OnBoolClick(object sender, RoutedEventArgs e)
+        /// <summary>The new value in whichever editor is showing, or null if none is chosen yet.</summary>
+        string EditorInput
         {
-            if (!_suppressEvents)
-                ApplyInput(BoolOn.IsChecked == true ? "1" : "0");
+            get
+            {
+                if (BoolEditor.Visibility == Visibility.Visible)
+                    return BoolOn.IsChecked == true ? "1" : BoolOff.IsChecked == true ? "0" : null;
+                if (EnumEditor.Visibility == Visibility.Visible)
+                    return EnumEditor.SelectedIndex >= 0 ? EnumEditor.SelectedIndex.ToString() : null;
+                return TextEditor.Text;
+            }
         }
 
-        void OnEnumChanged(object sender, SelectionChangedEventArgs e)
+        void OnApplyClick(object sender, RoutedEventArgs e)
         {
-            if (_suppressEvents || EnumEditor.SelectedIndex < 0)
+            string input = EditorInput;
+            if (input != null)
+                ApplyInput(input);
+        }
+
+        // ON/Off and enum choices are only staged here; they're saved by Apply & Save, like text values.
+        void OnBoolClick(object sender, RoutedEventArgs e) { OnEditorChoiceChanged(); }
+        void OnEnumChanged(object sender, SelectionChangedEventArgs e) { OnEditorChoiceChanged(); }
+
+        void OnEditorChoiceChanged()
+        {
+            if (_suppressEvents)
                 return;
 
-            // Deferred: applying reloads the detail pane, which resets this combo's items.
-            string input = EnumEditor.SelectedIndex.ToString();
-            Dispatcher.BeginInvoke(new Action(() => ApplyInput(input)));
+            SaveFeedback.Text = "";
+            UpdateButtons();
         }
 
         void OnFillDefaultClick(object sender, RoutedEventArgs e)
         {
             ParamEntry entry = SelectedEntry;
-            if (entry != null && entry.BmsValue != null)
+            if (entry == null || entry.BmsValue == null)
+                return;
+
+            if (BoolEditor.Visibility == Visibility.Visible)
+            {
+                bool? b = ValueConverter.ParseCfgBool(entry.BmsValue);
+                BoolOn.IsChecked = b == true;
+                BoolOff.IsChecked = b == false;
+                OnEditorChoiceChanged();
+            }
+            else if (EnumEditor.Visibility == Visibility.Visible)
+            {
+                long? n = ValueConverter.ParseCfgInt(entry.BmsValue);
+                EnumEditor.SelectedIndex = (n.HasValue && n.Value >= 0 && n.Value < EnumEditor.Items.Count) ? (int)n.Value : -1;
+            }
+            else
             {
                 TextEditor.Text = ValueConverter.ToEditText(entry.Type, entry.BmsValue);
                 TextEditor.Focus();
