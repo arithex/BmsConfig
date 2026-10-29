@@ -7,3 +7,9 @@ New Config tool for Falcon BMS -- replacement for the legacy F4Patch-based Confi
 - Treat 'Falcon BMS.cfg' mostly as a readonly manifest/catalog of available cfg params (except for the feature-flag params)
 - Be an editor not a generator -- whitepace, comments and additional/undocumented params in User.cfg remain, unharmed
 - Play nice with the Launcher -- don't add or modify below the Launcher's cut-line
+
+### UI Prototype/Mockups
+
+![Opening Screen](.github/images/Mockup1.png)
+
+![Listview Screen](.github/images/Mockup2.png)
