@@ -18,7 +18,7 @@
 
     <Product>Falcon BMS Config Editor</Product>
     <Company>Benchmark Sims</Company>
-    <Version>1.0.0</Version>
+    <Version>2.0.0</Version>
 
     <!-- Single exe: no app.config, no satellite assemblies, no pdb next to the exe in Release. -->
     <GenerateSupportedRuntime>false</GenerateSupportedRuntime>
