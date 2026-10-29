@@ -56,11 +56,9 @@ namespace BmsConfig
             CategoryCombo.SelectedIndex = 0;
             _suppressEvents = false;
 
-            SourceInitialized += (s, e) =>
-            {
-                ThemeManager.ApplyTitleBar(this);
-                WindowFitting.FitToWorkArea(this); // also centers the window
-            };
+            WindowFitting.FitToWorkArea(this); // also centers the window
+
+            SourceInitialized += (s, e) => ThemeManager.ApplyTitleBar(this);
             Loaded += OnLoaded;
             PreviewKeyDown += OnWindowPreviewKeyDown;
             Drop += OnDrop;
