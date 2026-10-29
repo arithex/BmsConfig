@@ -31,6 +31,10 @@ dotnet test tests/BmsConfig.Tests
 
 Every push is built on GitHub Actions (`.github/workflows/build.yml`); `Config.exe` is attached to each run as an artifact.
 
+### Releasing
+
+Bump `<Version>` in `src/BmsConfig/BmsConfig.csproj`, then either push a matching tag (eg. `v2.0` for version 2.0.0), or run the **Release** workflow from the Actions tab (it tags the branch as `v` + the version). The workflow (`.github/workflows/release.yml`) runs the tests, builds `Config.exe` on Windows, and publishes a GitHub release with the exe attached and auto-generated release notes.
+
 ### Source layout
 
 | Path | Purpose |
