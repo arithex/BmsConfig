@@ -118,9 +118,7 @@ One small quirk: when editing or adding lines to "Falcon BMS User.cfg", they mus
 
 ### Look and Feel:
 
-The README.md contains a couple UI mockups, from a prototype of this app.
-
-The color palette and general look, should look like this UI mockup.
+The README.md contains a couple UI mockups, from a prototype of this app.  (The dark-mode is shown.)  The color palette and general look, should stay true to this UI mockup.
 
 For boolean values, prefer text labels "ON" and "Off", not true/false or 1/0.
 
