@@ -11,6 +11,7 @@
     <!-- AnyCPU, 64-bit preferred (runs natively as x64 or ARM64, and as x86 on 32-bit Windows). -->
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
+    <PreferNativeArm64>true</PreferNativeArm64>
 
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Config.ico</ApplicationIcon>
