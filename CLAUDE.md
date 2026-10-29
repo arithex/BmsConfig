@@ -47,7 +47,7 @@ If there are duplicate lines (two or more lines setting the same param) it's "la
 
 ### Document model:
 
-As a tenet, I want this app to be a "cfg file editor" not a "cfg file generator".  That means, to honor and preserve any comments and blank lines, and preserve the overall ordering.
+As a tenet, I want this app to be a "cfg file editor" not a "cfg file generator".  That means, to honor and preserve any comments and blank lines, and preserve the overall ordering where possible.  This is important, even if we offer a function to "remove" a param -- if the set line contains trailing comments, which may contain important context, we should comment-out that line, not delete it (and un-comment it, in place, if modifying or reapplying it).  This is important to build and retain user trust.
 
 There are 3 cfg files in play:
 - "Falcon BMS.cfg": we generally treat this as the readonly manifest of params, their baseline default values, their categories and comment/description text.
@@ -101,6 +101,19 @@ g_sNonCompatibleChanges
     "^none(\+([A-Z0-9_]+))*$"
 ```
 
+### Special notes on comment lines:
+
+One small quirk: when editing or adding lines to "Falcon BMS User.cfg", they must be placed above the "cut line" which looks like
+```
+// LAUNCHER OVERRIDES BEGIN HERE - DO NOT EDIT OR ADD BELOW THIS LINE
+```
+
+There should never be any commented-out lines below the "launcher cut-line", but if so, it is safe to ignore them.
+
+Another quirk: when parsing BMS.cfg, ignore any commented-out 'set' commands.  The only meaningful comments in BMS.cfg, are category-headers and the param description text.
+
+When reading, comments may begin with either '#' or '//' but if we use commenting to "remove" a line, we should prefer the '//' token.
+
 ### The view:
 
 The goal of the app should be to present a unified view of config values, last-writer-wins, in the implicit order of "Falcon BMS.cfg", "Falcon BMS User.cfg", and optionally "Falcon BMS VR.cfg"
@@ -111,10 +124,6 @@ When editing values in the detail pane, user can choose to apply the edits/addit
 
 Changes should be applied immediately (auto-saved).
 
-One small quirk: when editing or adding lines to "Falcon BMS User.cfg", they must be placed above the "cut line" which looks like
-```
-// LAUNCHER OVERRIDES BEGIN HERE - DO NOT EDIT OR ADD BELOW THIS LINE
-```
 
 ### Look and Feel:
 
