@@ -2,7 +2,7 @@ I need a simple GUI app to help my users modify and maintain a set of config fil
 
 ### Platform:
 
-I need it to be C#, .Net Framework 4.8 for Win10/11 (target 'AnyCPU' but 64-bit preferred).  WPF is fine, but no other dependencies apart from Windows and .Net Framework.  (I need to distribute it as a single exe -- let's name it Config.exe -- and it needs to work in Linux/Wine environments and Win11-ARM64 too, so my goal is to keep things simple as possible.  Our other tools are mostly WPF targeting .Net Framework 4.8, and working well.)
+I need it to be C#, .Net Framework 4.8 for Win10/11 (target 'AnyCPU' -- with 64-bit preferred).  WPF is fine, but no other dependencies apart from Windows and .Net Framework.  (I need to distribute it as a single exe -- let's name it Config.exe -- and it needs to work in Linux/Wine environments and Win11-ARM64 too, so my goal is to keep things simple as possible.  Our other tools are mostly WPF targeting .Net Framework 4.8, and working well.)
 
 ### CFG file schema / grammar:
 
@@ -50,7 +50,7 @@ If there are duplicate lines (two or more lines setting the same param) it's "la
 As a tenet, I want this app to be a "cfg file editor" not a "cfg file generator".  That means, to honor and preserve any comments and blank lines, and preserve the overall ordering.
 
 There are 3 cfg files in play:
-- "Falcon BMS.cfg": let's treat this as the readonly manifest of params, their baseline default values, their categories and comment/description text.
+- "Falcon BMS.cfg": we generally treat this as the readonly manifest of params, their baseline default values, their categories and comment/description text.
 - "Falcon BMS User.cfg": this is where the majority of user changes will be saved.  Note, it may contain additional params not present in the first file -- that is fine, we can file those under an "Other" category.
 - "Falcon BMS VR.cfg": these are overrides that will only apply when the game is launched in VR mode.
 
@@ -74,7 +74,7 @@ HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Benchmark Sims\Falcon BMS 4.38 (Internal
     baseDir    REG_SZ    C:\Falcon BMS 4.38 (Internal)
 ```
 
-The 3 cfg files are in the `./User/Config` subfolder of that baseDir.
+The 3 cfg files reside in the `./User/Config` subfolder of those baseDir(s).
 
 If the cfg files are not found there -- fallback to show a folder-open dialog, to let the user locate them.
 
@@ -103,7 +103,7 @@ g_sNonCompatibleChanges
 
 ### The view:
 
-The goal of the app should be to present a unified view of config values, last-writer-wins, in order of "Falcon BMS.cfg", "Falcon BMS User.cfg", and optionally "Falcon BMS VR.cfg"
+The goal of the app should be to present a unified view of config values, last-writer-wins, in the implicit order of "Falcon BMS.cfg", "Falcon BMS User.cfg", and optionally "Falcon BMS VR.cfg"
 
 I'm envisioning, a conventional master/detail listview UX.. nominally sized for 1920x1080 display, but resizable.
 
@@ -118,15 +118,20 @@ One small quirk: when editing or adding lines to "Falcon BMS User.cfg", they mus
 
 ### Look and Feel:
 
+The README.md contains a couple UI mockups, from a prototype of this app.
+
 The color palette and general look, should look like this UI mockup.
 
-https://snipboard.io/1wods9.jpg
+For boolean values, prefer text labels "ON" and "Off", not true/false or 1/0.
 
+### Input validation and conversions:
 
-TODO
+Some cfg params may need a range enforced.  If the description-comment contains `Range:[0-100]` treat that as the allowable range (inclusive).  `Range:[0-]` means the value is unsigned (can't be negative) but no upper bound.
 
+Integer values: may be signed or unsigned.  Always serialized as base-10 decimal, but accept hexadecimal input with leading 0x prefix .. eg "0x10000001" converts to 268435457.
 
+Some integer values may be enumerations.. if the description-comment contains `Enum:[Low,Medium,High]` those labels can be presented, instead of 0,1,2.
 
+Floating-point values: no Infinities or NaNs, and no exponential notation.
 
-
-Dropdown for install
+String values: a common user error is to paste in unicode fancy-quotes, instead of ascii 0x22 doublequotes.  If the user pastes a string already wrapped in doublequote (0x22 or fancy quotes) or singalquotes, remove them (but when serializing, always use 0x22 doublequotes for string values)
