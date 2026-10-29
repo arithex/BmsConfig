@@ -109,6 +109,67 @@ namespace BmsConfig.Tests
         }
 
         [Fact]
+        public void RemoveValueCommentsOutLinesWithNotes()
+        {
+            string user =
+                "set g_bPlain 1\n" +
+                "  set g_bNoted 1 // NOTE: turn this off before multiplayer\n" +
+                "set g_bEmptyComment 1 //\n";
+
+            CfgDocument doc = CfgDocument.Parse(user);
+            Assert.Equal(1, doc.RemoveValue("g_bPlain", respectCutLine: true));
+            Assert.Equal(1, doc.RemoveValue("g_bNoted", respectCutLine: true));
+            Assert.Equal(1, doc.RemoveValue("g_bEmptyComment", respectCutLine: true));
+
+            Assert.Equal("  // set g_bNoted 1 // NOTE: turn this off before multiplayer\n", doc.ToText());
+            Assert.Null(doc.FindLast("g_bNoted"));
+            Assert.NotNull(doc.FindLastCommented("g_bNoted"));
+            Assert.Equal(0, doc.RemoveValue("g_bNoted", respectCutLine: true));
+        }
+
+        [Fact]
+        public void SetValueUncommentsCommentedOutLine()
+        {
+            string user =
+                "  // set g_bNoted 1 // NOTE: turn this off before multiplayer\n" +
+                "#set g_nHash 5\n" +
+                "// LAUNCHER OVERRIDES BEGIN HERE - DO NOT EDIT OR ADD BELOW THIS LINE\n" +
+                "// set g_nBelow 1 // launcher\n";
+
+            CfgDocument doc = CfgDocument.Parse(user);
+            doc.SetValue("g_bNoted", "0", respectCutLine: true);
+            doc.SetValue("g_nHash", "7", respectCutLine: true);
+            doc.SetValue("g_nBelow", "2", respectCutLine: true); // the commented line below the cut is left alone
+
+            Assert.Equal(
+                "  set g_bNoted 0 // NOTE: turn this off before multiplayer\n" +
+                "set g_nHash 7\n" +
+                "set g_nBelow 2\n" +
+                "// LAUNCHER OVERRIDES BEGIN HERE - DO NOT EDIT OR ADD BELOW THIS LINE\n" +
+                "// set g_nBelow 1 // launcher\n",
+                doc.ToText());
+        }
+
+        [Fact]
+        public void RemoveThenSetRoundTrips()
+        {
+            const string line = "set g_bNoted 1 // NOTE: turn this off before multiplayer\r\n";
+            CfgDocument doc = CfgDocument.Parse(line);
+            doc.RemoveValue("g_bNoted", respectCutLine: true);
+            doc.SetValue("g_bNoted", "1", respectCutLine: true);
+            Assert.Equal(line, doc.ToText());
+        }
+
+        [Fact]
+        public void CommentedSetIsNotACategory()
+        {
+            CfgDocument doc = CfgDocument.Parse("// set g_bFoo 1 //\n// Real Category //\n// set g_nBad abc // not an int\n");
+            Assert.Equal(CfgLineKind.CommentedSet, doc.Lines[0].Kind);
+            Assert.Equal(CfgLineKind.Category, doc.Lines[1].Kind);
+            Assert.Equal(CfgLineKind.Other, doc.Lines[2].Kind);
+        }
+
+        [Fact]
         public void SavesWithoutBom()
         {
             string dir = Directory.CreateTempSubdirectory().FullName;
@@ -128,6 +189,38 @@ namespace BmsConfig.Tests
 
     public class ConfigSetTests
     {
+        [Fact]
+        public void ListsCommentedOutParams()
+        {
+            CfgDocument bms = CfgDocument.Parse("// GENERAL //\nset g_bKnown 1 // Known\n// set g_bBmsCommented 1 // ignored in Falcon BMS.cfg\n");
+            CfgDocument user = CfgDocument.Parse(
+                "// set g_bKnown 0 // my note\n" +
+                "// set g_bExperimental 1 // NOTE: off before MP\n" +
+                "// LAUNCHER OVERRIDES BEGIN HERE - DO NOT EDIT OR ADD BELOW THIS LINE\n" +
+                "// set g_bBelowCut 1 // x\n");
+            CfgDocument vr = CfgDocument.Parse("// set g_nVrOnly 2 // vr note\n");
+
+            ConfigSet set = ConfigSet.FromDocuments("x", bms, user, vr);
+
+            ParamEntry known = set.Find("g_bKnown");
+            Assert.Equal("GENERAL", known.Category);
+            Assert.True(known.UserCommentedOut);
+            Assert.Null(known.UserValue);
+            Assert.Equal("1", known.GetEffectiveValue(true));
+
+            ParamEntry experimental = set.Find("g_bExperimental");
+            Assert.Equal("Other", experimental.Category);
+            Assert.Equal("NOTE: off before MP", experimental.Description);
+            Assert.True(experimental.UserCommentedOut);
+            Assert.Null(experimental.BmsValue);
+            Assert.Null(experimental.GetEffectiveValue(true));
+
+            Assert.True(set.Find("g_nVrOnly").VrCommentedOut);
+            Assert.Null(set.Find("g_bBmsCommented"));
+            Assert.Null(set.Find("g_bBelowCut"));
+            Assert.Contains("Other", set.Categories);
+        }
+
         [Fact]
         public void ParsesRealWorldHeader()
         {

@@ -488,12 +488,14 @@ namespace BmsConfig
             DetailDefault.Text = entry.BmsValue != null ? item.Default : "(none)";
             ValueSource source;
             string current = entry.GetEffectiveValue(includeVr, out source);
-            DetailCurrent.Text = ValueConverter.ToDisplay(entry.Type, current, c);
+            DetailCurrent.Text = current != null ? ValueConverter.ToDisplay(entry.Type, current, c) : "(none)";
             DetailCurrentSource.Text = source != ValueSource.None ? "[from " + ParamItem.SourceToText(source) + "]" : "";
             DetailUser.Text = entry.UserValue != null
                 ? ValueConverter.ToDisplay(entry.Type, entry.UserValue, c) + (entry.UserValueFromLauncher ? "   (Launcher section)" : "")
-                : "(not set)";
-            DetailVr.Text = entry.VrValue != null ? ValueConverter.ToDisplay(entry.Type, entry.VrValue, c) : "(not set)";
+                : (entry.UserCommentedOut ? "(none; commented out)" : "(none)");
+            DetailVr.Text = entry.VrValue != null
+                ? ValueConverter.ToDisplay(entry.Type, entry.VrValue, c)
+                : (entry.VrCommentedOut ? "(none; commented out)" : "(none)");
 
             // Editor
             _suppressEvents = true;

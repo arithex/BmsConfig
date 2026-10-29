@@ -16,6 +16,8 @@ namespace BmsConfig.Core
         Set,
         /// <summary>The Launcher's cut line, in Falcon BMS User.cfg.</summary>
         CutLine,
+        /// <summary>A commented-out "set" line, eg. "// set {name} {value} // note".</summary>
+        CommentedSet,
     }
 
     /// <summary>
@@ -27,7 +29,7 @@ namespace BmsConfig.Core
         public string Text { get; internal set; }
         public CfgLineKind Kind { get; internal set; }
 
-        // Kind == Set
+        // Kind == Set or CommentedSet
         public string Name { get; internal set; }
         public string RawValue { get; internal set; }
         public string Description { get; internal set; }
@@ -52,6 +54,11 @@ namespace BmsConfig.Core
         // set {name} {value} [// description | # description]
         static readonly Regex s_setLine = new Regex(
             @"^\s*set\s+(?<name>[A-Za-z_][A-Za-z0-9_]*)\s+(?<value>""[^""]*""|[^\s""]+)\s*(?:(?://|#)\s?(?<desc>.*))?$",
+            RegexOptions.CultureInvariant);
+
+        // A commented-out set line: the comment marker, then a well-formed set line.
+        static readonly Regex s_commentedSetLine = new Regex(
+            @"^(?<indent>\s*)(?://|#)\s*(?<body>set\s.*)$",
             RegexOptions.CultureInvariant);
 
         readonly List<CfgLine> _lines = new List<CfgLine>();
@@ -122,6 +129,14 @@ namespace BmsConfig.Core
                 return line;
             }
 
+            // Checked before categories: "// set g_bFoo 1 //" is a commented-out param, not a category header.
+            Match commented = s_commentedSetLine.Match(text);
+            if (commented.Success && TryParseSet(line, text, commented.Groups["body"].Index))
+            {
+                line.Kind = CfgLineKind.CommentedSet;
+                return line;
+            }
+
             if (trimmed.Length >= 4
                 && trimmed.StartsWith("//", StringComparison.Ordinal)
                 && trimmed.EndsWith("//", StringComparison.Ordinal))
@@ -136,25 +151,55 @@ namespace BmsConfig.Core
                 return line;
             }
 
-            Match m = s_setLine.Match(text);
-            if (m.Success)
-            {
-                string name = m.Groups["name"].Value;
-                string value = m.Groups["value"].Value;
-
-                // Values that don't conform to the param's datatype are ignored (treated as comments).
-                if (!ValueConverter.IsValidCfgToken(ParamTypes.FromName(name), value))
-                    return line;
-
+            if (TryParseSet(line, text, 0))
                 line.Kind = CfgLineKind.Set;
-                line.Name = name;
-                line.RawValue = value;
-                line.ValueStart = m.Groups["value"].Index;
-                line.ValueLength = m.Groups["value"].Length;
-                line.Description = m.Groups["desc"].Success ? m.Groups["desc"].Value.Trim() : null;
-            }
 
             return line;
+        }
+
+        /// <summary>
+        /// Parses the set statement starting at text[start], filling in the line's Name, RawValue etc.
+        /// (but not its Kind).  Returns false if it isn't a well-formed set statement.
+        /// </summary>
+        static bool TryParseSet(CfgLine line, string text, int start)
+        {
+            Match m = s_setLine.Match(text.Substring(start));
+            if (!m.Success)
+                return false;
+
+            string name = m.Groups["name"].Value;
+            string value = m.Groups["value"].Value;
+
+            // Values that don't conform to the param's datatype are ignored (treated as comments).
+            if (!ValueConverter.IsValidCfgToken(ParamTypes.FromName(name), value))
+                return false;
+
+            line.Name = name;
+            line.RawValue = value;
+            line.ValueStart = start + m.Groups["value"].Index;
+            line.ValueLength = m.Groups["value"].Length;
+            line.Description = m.Groups["desc"].Success ? m.Groups["desc"].Value.Trim() : null;
+            return true;
+        }
+
+        /// <summary>True if the set line has a non-empty trailing comment, eg. a note the user wrote.</summary>
+        static bool HasTrailingComment(CfgLine line)
+        {
+            return !string.IsNullOrEmpty(line.Description);
+        }
+
+        /// <summary>"set x 1 // note" -> "// set x 1 // note", keeping the indentation.</summary>
+        static string CommentOut(string text)
+        {
+            int indent = text.Length - text.TrimStart().Length;
+            return text.Substring(0, indent) + "// " + text.Substring(indent);
+        }
+
+        /// <summary>"// set x 1 // note" -> "set x 1 // note", keeping the indentation.</summary>
+        static string Uncomment(string text)
+        {
+            Match m = s_commentedSetLine.Match(text);
+            return m.Groups["indent"].Value + m.Groups["body"].Value;
         }
 
         /// <summary>Index of the Launcher cut line, or -1 if none.</summary>
@@ -179,7 +224,14 @@ namespace BmsConfig.Core
             return index >= 0 ? _lines[index] : null;
         }
 
-        int FindLastIndex(string name, bool aboveCutLine)
+        /// <summary>The last commented-out set line for the given param, or null.</summary>
+        public CfgLine FindLastCommented(string name, bool aboveCutLine = false)
+        {
+            int index = FindLastIndex(name, aboveCutLine, CfgLineKind.CommentedSet);
+            return index >= 0 ? _lines[index] : null;
+        }
+
+        int FindLastIndex(string name, bool aboveCutLine, CfgLineKind kind = CfgLineKind.Set)
         {
             int end = _lines.Count;
             if (aboveCutLine)
@@ -192,7 +244,7 @@ namespace BmsConfig.Core
             for (int i = end - 1; i >= 0; i--)
             {
                 CfgLine line = _lines[i];
-                if (line.Kind == CfgLineKind.Set && string.Equals(line.Name, name, StringComparison.OrdinalIgnoreCase))
+                if (line.Kind == kind && string.Equals(line.Name, name, StringComparison.OrdinalIgnoreCase))
                     return i;
             }
             return -1;
@@ -200,14 +252,22 @@ namespace BmsConfig.Core
 
         /// <summary>
         /// Sets a param's value.  If a set line already exists, only its value token is replaced (preserving
-        /// whitespace and trailing comment).  Otherwise a new line is inserted -- above the Launcher cut line
-        /// if there is one, else at the end of the file.
+        /// whitespace and trailing comment).  Failing that, if a commented-out set line exists (eg. from
+        /// RemoveValue), it is uncommented and its value replaced.  Otherwise a new line is inserted -- above
+        /// the Launcher cut line if there is one, else at the end of the file.
         /// </summary>
         /// <param name="serializedValue">The value as it should appear in the file (eg. already quoted for strings).</param>
         /// <param name="respectCutLine">If true, never edit or insert at/below the Launcher cut line.</param>
         public void SetValue(string name, string serializedValue, bool respectCutLine)
         {
             int index = FindLastIndex(name, respectCutLine);
+            if (index < 0)
+            {
+                index = FindLastIndex(name, respectCutLine, CfgLineKind.CommentedSet);
+                if (index >= 0)
+                    _lines[index] = ParseLine(Uncomment(_lines[index].Text));
+            }
+
             if (index >= 0)
             {
                 CfgLine old = _lines[index];
@@ -230,7 +290,8 @@ namespace BmsConfig.Core
 
         /// <summary>
         /// Removes all set lines for the given param (only those above the cut line, if respectCutLine).
-        /// Returns the number of lines removed.
+        /// Lines with a trailing comment are commented out rather than deleted, so the user's notes are kept.
+        /// Returns the number of lines removed or commented out.
         /// </summary>
         public int RemoveValue(string name, bool respectCutLine)
         {
@@ -238,7 +299,10 @@ namespace BmsConfig.Core
             int index;
             while ((index = FindLastIndex(name, respectCutLine)) >= 0)
             {
-                _lines.RemoveAt(index);
+                if (HasTrailingComment(_lines[index]))
+                    _lines[index] = ParseLine(CommentOut(_lines[index].Text));
+                else
+                    _lines.RemoveAt(index);
                 removed++;
             }
             return removed;
