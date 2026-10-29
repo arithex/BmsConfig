@@ -1,0 +1,62 @@
+name: Release
+
+# Builds Config.exe and publishes it as a GitHub release.  Two ways to start it:
+#  - Push a version tag, eg. "git tag v2.0 && git push origin v2.0".  The tag must match <Version> in BmsConfig.csproj.
+#  - Actions tab > Release > "Run workflow".  Tags the selected branch as "v" + <Version>, eg. v2.0.0.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Determine version and tag
+        id: version
+        shell: pwsh
+        run: |
+          $csproj = [xml](Get-Content src/BmsConfig/BmsConfig.csproj)
+          $version = @($csproj.Project.PropertyGroup.Version | Where-Object { $_ })[0]
+          if (-not $version) { throw "No <Version> found in BmsConfig.csproj" }
+
+          # Compare as 3-part versions, so tag v2.0 matches <Version>2.0.0</Version>.
+          function Normalize([string]$v) { $parts = @($v.Split('.')); while ($parts.Count -lt 3) { $parts += '0' }; $parts -join '.' }
+
+          if ('${{ github.event_name }}' -eq 'push') {
+            $tag = '${{ github.ref_name }}'
+            if ((Normalize $tag.TrimStart('v')) -ne (Normalize $version)) {
+              throw "Tag $tag does not match <Version>$version</Version> in BmsConfig.csproj"
+            }
+          } else {
+            $tag = "v$version"
+          }
+
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Test
+        run: dotnet test tests/BmsConfig.Tests -c Release
+
+      - name: Build Config.exe
+        run: dotnet build src/BmsConfig -c Release
+
+      - name: Publish release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create '${{ steps.version.outputs.tag }}' src/BmsConfig/bin/Release/net48/Config.exe `
+            --target '${{ github.sha }}' `
+            --title 'Config ${{ steps.version.outputs.version }}' `
+            --generate-notes
