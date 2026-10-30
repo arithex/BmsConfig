@@ -46,7 +46,7 @@ namespace BmsConfig.Core
     }
 
     /// <summary>
-    /// Constraints parsed from a param's description text: "Range:[0-100]", "Range:[0-]", "Enum:[Low,Medium,High]".
+    /// Constraints parsed from a param's description text: "Range: [0-100]", "Range: [0-]", "Values: [Low,Medium,High]".
     /// </summary>
     public sealed class ParamConstraints
     {
@@ -55,7 +55,7 @@ namespace BmsConfig.Core
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         static readonly Regex s_enum = new Regex(
-            @"Enum:\s*\[(?<labels>[^\]]*)\]",
+            @"Values:\s*\[(?<labels>[^\]]*)\]",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         public static readonly ParamConstraints None = new ParamConstraints();

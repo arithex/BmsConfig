@@ -255,7 +255,7 @@ namespace BmsConfig.Tests
             CfgDocument bms = CfgDocument.Parse(
                 "// GENERAL //\n" +
                 "set g_bA 1 // A\n" +
-                "set g_nB 2 // B Enum:[Low,Medium,High]\n" +
+                "set g_nB 2 // B Values:[Low,Medium,High]\n" +
                 "// GRAPHICS //\n" +
                 "set g_fC 1.0 // C Range:[0-]\n");
             CfgDocument user = CfgDocument.Parse(

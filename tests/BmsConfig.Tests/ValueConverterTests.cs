@@ -63,7 +63,7 @@ namespace BmsConfig.Tests
         [Fact]
         public void EnumLabels()
         {
-            const string desc = "Quality. Enum:[Low, Medium, High]";
+            const string desc = "Quality. Values: [Low, Medium, High]";
             Assert.Equal("2", Convert("g_nX", "high", desc));
             Assert.Equal("1", Convert("g_nX", "1", desc));
             Assert.Null(Convert("g_nX", "3", desc));

@@ -29,8 +29,8 @@ A comment line that begins and ends in a trailing // should be considered a "cat
 // This is a category header //
 ///////////////////////////////
 
-set g_nFooNumber 42 // This is the Foo value.  Range: [0-42]
-set g_fBarNumber 42.42 // This is the Bar value.  Range: [0.0-100.0]
+set g_nFooNumber 42 // This is the Foo value.
+set g_fBarNumber 45.67 // This is the Bar value.
 
 // This is also a category header //
 set g_bSomethingEnabled 1
@@ -133,12 +133,14 @@ For boolean values, prefer text labels "ON" and "Off", not true/false or 1/0.
 
 ### Input validation and conversions:
 
-Some cfg params may need a range enforced.  If the description-comment contains `Range:[0-100]` treat that as the allowable range (inclusive).  `Range:[0-]` means the value is unsigned (can't be negative) but no upper bound.
+Some cfg params may need a range enforced.  If the description-comment contains `Range: [0-100]` treat that as the allowable range (inclusive).  `Range: [0-]` means the value is unsigned (can't be negative) but no upper bound.    `Range: [20-100, by 10]` means the range is [20-100] but values must step by 10 (viz. 20, 30, 40, ... 90, 100).
+
+If existing cfg documents contain values outside the allowed range or stepping, that is fine -- highlight that condition (warning) in the UX.
 
 Integer values: may be signed or unsigned.  Always serialized as base-10 decimal, but accept hexadecimal input with leading 0x prefix .. eg "0x10000001" converts to 268435457.
 
-Some integer values may be enumerations.. if the description-comment contains `Enum:[Low,Medium,High]` those labels can be presented, instead of 0,1,2.
+Some integer values may be enumerations.. if the description-comment contains `Values: [Low,Medium,High]` those labels can be presented, instead of 0,1,2.  (The enums will always be zero-based, unique identifiers, not combinable bitfields.)
 
-Floating-point values: no Infinities or NaNs, and no exponential notation.
+Floating-point values: no Infinities or NaNs, and no exponential notation.  Always parsed using the "invariant" locale.. no localized radix or commas.
 
-String values: a common user error is to paste in unicode fancy-quotes, instead of ascii 0x22 doublequotes.  If the user pastes a string already wrapped in doublequote (0x22 or fancy quotes) or singalquotes, remove them (but when serializing, always use 0x22 doublequotes for string values)
+String values: a common user error is to paste in unicode fancy-quotes, instead of ascii 0x22 doublequotes.  If the user pastes a string already wrapped in doublequote (0x22 or fancy quotes) or singlequotes, remove them (but when serializing, always use 0x22 doublequotes for string values).
