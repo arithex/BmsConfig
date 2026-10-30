@@ -225,6 +225,9 @@
                             <!-- Enum editor -->
                             <ComboBox x:Name="EnumEditor" HorizontalAlignment="Stretch" SelectionChanged="OnEnumChanged" />
 
+                            <!-- Choice editor: buttons for a small set of discrete numbers (Values: [8,9,10] or Range: [a-b, by c]) -->
+                            <WrapPanel x:Name="ChoiceEditor" />
+
                             <!-- Text editor (int / float / string) -->
                             <TextBox x:Name="TextEditor" KeyDown="OnTextEditorKeyDown" TextChanged="OnTextEditorChanged" MinHeight="40"
                                      ToolTip="Press Enter to apply" />
