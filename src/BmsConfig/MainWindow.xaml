@@ -111,14 +111,14 @@
                           GridViewColumnHeader.Click="OnColumnHeaderClick">
                     <ListView.View>
                         <GridView AllowsColumnReorder="False">
-                            <GridViewColumn Header="PARAMETER" Width="380">
+                            <GridViewColumn Header="PARAMETER" Width="300">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding Name}" Margin="8,0,0,0" TextTrimming="CharacterEllipsis" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="VALUE" Width="230">
+                            <GridViewColumn Header="VALUE" Width="150">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" Margin="8,0,0,0">
@@ -138,7 +138,7 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="DEFAULT" Width="180">
+                            <GridViewColumn Header="DEFAULT" Width="150">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding Default}" Margin="8,0,0,0" TextTrimming="CharacterEllipsis"
@@ -146,7 +146,7 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="SOURCE" Width="110">
+                            <GridViewColumn Header="SOURCE" Width="100">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding SourceText}" Margin="8,0,0,0" Foreground="{DynamicResource SecondaryForeground}" />
