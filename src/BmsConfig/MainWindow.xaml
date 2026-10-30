@@ -121,8 +121,15 @@
                             <GridViewColumn Header="VALUE" Width="230">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock x:Name="Value" Text="{Binding Value}" Margin="8,0,0,0" TextTrimming="CharacterEllipsis" />
+                                        <StackPanel Orientation="Horizontal" Margin="8,0,0,0">
+                                            <TextBlock x:Name="Value" Text="{Binding Value}" TextTrimming="CharacterEllipsis" />
+                                            <Path x:Name="WarningIcon" Style="{StaticResource WarningIcon}" Margin="8,0,0,0"
+                                                  Visibility="Collapsed" ToolTip="{Binding Warning}" />
+                                        </StackPanel>
                                         <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding HasWarning}" Value="True">
+                                                <Setter TargetName="WarningIcon" Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
                                             <DataTrigger Binding="{Binding IsModified}" Value="True">
                                                 <Setter TargetName="Value" Property="Foreground" Value="{DynamicResource ModifiedForeground}" />
                                                 <Setter TargetName="Value" Property="FontWeight" Value="SemiBold" />
@@ -208,6 +215,16 @@
                                 <TextBlock Grid.Row="2" Grid.Column="1" x:Name="DetailUser" Margin="0,2" Style="{StaticResource SecondaryText}" TextWrapping="Wrap" />
                                 <TextBlock Grid.Row="3" Text="VR.cfg:" Margin="0,2,10,2" Style="{StaticResource SecondaryText}" />
                                 <TextBlock Grid.Row="3" Grid.Column="1" x:Name="DetailVr" Margin="0,2" Style="{StaticResource SecondaryText}" TextWrapping="Wrap" />
+                            </Grid>
+
+                            <Grid x:Name="DetailWarningPanel" Margin="0,8,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Path Style="{StaticResource WarningIcon}" VerticalAlignment="Top" Margin="0,4,8,0" />
+                                <TextBlock x:Name="DetailWarning" Grid.Column="1" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource ModifiedForeground}" />
                             </Grid>
 
                             <TextBlock Text="NEW VALUE" Style="{StaticResource SectionLabel}" />

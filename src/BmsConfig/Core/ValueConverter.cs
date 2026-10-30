@@ -367,6 +367,19 @@ namespace BmsConfig.Core
             }
         }
 
+        /// <summary>
+        /// Checks a value already in a cfg file against the param's constraints (range, step, allowed values,
+        /// feature-flag syntax).  Such values are kept as-is, but flagged in the UI.  Returns the problem, or null.
+        /// </summary>
+        public static string CheckCfgValue(string name, ParamType type, ParamConstraints constraints, string rawValue)
+        {
+            if (rawValue == null || type == ParamType.Bool || type == ParamType.Unknown)
+                return null;
+
+            string token, error;
+            return TryConvertInput(name, type, constraints, ToEditText(type, rawValue), out token, out error) ? null : error;
+        }
+
         static bool TryConvertBool(string input, out string cfgToken, out string error)
         {
             cfgToken = null;

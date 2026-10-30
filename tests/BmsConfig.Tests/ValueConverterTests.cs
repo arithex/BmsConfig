@@ -129,6 +129,27 @@ namespace BmsConfig.Tests
             Assert.Null(Convert("g_fCursorSpeed", "1.25", floats));
         }
 
+        [Fact]
+        public void FlagsExistingValuesThatBreakConstraints()
+        {
+            ParamConstraints step = ParamConstraints.Parse("Range: [20-120, by 20]");
+            Assert.Null(ValueConverter.CheckCfgValue("g_nX", ParamType.Int, step, "40"));
+            Assert.NotNull(ValueConverter.CheckCfgValue("g_nX", ParamType.Int, step, "50"));
+            Assert.NotNull(ValueConverter.CheckCfgValue("g_nX", ParamType.Int, step, "140"));
+
+            ParamConstraints floats = ParamConstraints.Parse("Values: [0.5, 0.75, 1.0]");
+            Assert.Null(ValueConverter.CheckCfgValue("g_fX", ParamType.Float, floats, "1"));
+            Assert.NotNull(ValueConverter.CheckCfgValue("g_fX", ParamType.Float, floats, "0.6"));
+
+            ParamConstraints labels = ParamConstraints.Parse("Values: [Low, High]");
+            Assert.NotNull(ValueConverter.CheckCfgValue("g_nX", ParamType.Int, labels, "2"));
+
+            Assert.NotNull(ValueConverter.CheckCfgValue("g_sPriorityFixes", ParamType.String, ParamConstraints.None, "\"all-foo\""));
+            Assert.Null(ValueConverter.CheckCfgValue("g_sOther", ParamType.String, ParamConstraints.None, "\"anything\""));
+            Assert.Null(ValueConverter.CheckCfgValue("g_bX", ParamType.Bool, ParamConstraints.None, "1"));
+            Assert.Null(ValueConverter.CheckCfgValue("g_nX", ParamType.Int, step, null));
+        }
+
         [Theory]
         [InlineData("g_sCpuPerfOptimizations", "all", true)]
         [InlineData("g_sPriorityFixes", "all-FOO-BAR_2", true)]

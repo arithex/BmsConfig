@@ -499,6 +499,14 @@ namespace BmsConfig
                 ? ValueConverter.ToDisplay(entry.Type, entry.VrValue, c)
                 : (entry.VrCommentedOut ? "(none; commented out)" : "(none)");
 
+            // Values already in the files that break the constraints are kept, but flagged.
+            List<string> warnings = new List<string>();
+            AddWarning(warnings, entry, "Default", entry.BmsValue);
+            AddWarning(warnings, entry, "User.cfg", entry.UserValue);
+            AddWarning(warnings, entry, "VR.cfg", entry.VrValue);
+            DetailWarning.Text = string.Join("\n", warnings);
+            DetailWarningPanel.Visibility = warnings.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+
             // Editor
             _suppressEvents = true;
             bool isBool = entry.Type == ParamType.Bool;
@@ -559,6 +567,13 @@ namespace BmsConfig
             FillDefaultButton.IsEnabled = entry.BmsValue != null;
             SaveFeedback.Text = "";
             UpdateButtons();
+        }
+
+        static void AddWarning(List<string> warnings, ParamEntry entry, string label, string rawValue)
+        {
+            string problem = ValueConverter.CheckCfgValue(entry.Name, entry.Type, entry.Constraints, rawValue);
+            if (problem != null)
+                warnings.Add(label + " value " + ValueConverter.ToDisplay(entry.Type, rawValue, entry.Constraints) + " is not allowed.  " + problem);
         }
 
         IEnumerable<CfgFile> SaveTargets
