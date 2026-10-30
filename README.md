@@ -10,8 +10,6 @@ New Config tool for Falcon BMS -- replacement for the legacy F4Patch-based Confi
 - Be an editor not a generator -- whitepace, comments and additional/undocumented params in User.cfg must remain unharmed
 - Play nice with the Launcher -- don't add or modify below the Launcher's cut-line
 
-### UI Prototype/Mockups
-
 ![Opening Screen](.github/images/Screenshot1.png)
 
 ### Build, Test, Run
