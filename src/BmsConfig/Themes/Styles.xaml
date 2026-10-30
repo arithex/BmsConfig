@@ -38,8 +38,8 @@
 
     <!-- Warning triangle (vector, so it doesn't depend on font glyphs being available, eg. under Wine) -->
     <Style x:Key="WarningIcon" TargetType="Path">
-        <Setter Property="Data" Value="M 6,0 L 12,11 L 0,11 Z M 5.3,3.5 L 6.7,3.5 L 6.45,7.5 L 5.55,7.5 Z M 5.3,8.4 L 6.7,8.4 L 6.7,9.8 L 5.3,9.8 Z" />
-        <Setter Property="FillRule" Value="EvenOdd" />
+        <!-- "F0" = even-odd fill rule, so the "!" is cut out of the triangle -->
+        <Setter Property="Data" Value="F0 M 6,0 L 12,11 L 0,11 Z M 5.3,3.5 L 6.7,3.5 L 6.45,7.5 L 5.55,7.5 Z M 5.3,8.4 L 6.7,8.4 L 6.7,9.8 L 5.3,9.8 Z" />
         <Setter Property="Fill" Value="{DynamicResource ModifiedForeground}" />
         <Setter Property="Width" Value="12" />
         <Setter Property="Height" Value="11" />
