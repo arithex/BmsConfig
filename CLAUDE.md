@@ -133,13 +133,15 @@ For boolean values, prefer text labels "ON" and "Off", not true/false or 1/0.
 
 ### Input validation and conversions:
 
-Some cfg params may need a range enforced.  If the description-comment contains `Range: [0-100]` treat that as the allowable range (inclusive).  `Range: [0-]` means the value is unsigned (can't be negative) but no upper bound.    `Range: [20-100, by 10]` means the range is [20-100] but values must step by 10 (viz. 20, 30, 40, ... 90, 100).
+Some cfg params may need a range enforced.  If the description-comment contains `Range: [0-100]` treat that as the allowable range (inclusive).  `Range: [0-]` means the value is unsigned (can't be negative) but no upper bound.    `Range: [20-100, by 10]` means the range is [20-100] but values must step by 10 (viz. 20, 30, 40, ... 90, 100).  If the number of discrete numeric options is 21 or fewer, show a grid of buttons to easy-click, instead of requiring textbox data entry.
 
-If existing cfg documents contain values outside the allowed range or stepping, that is fine -- highlight that condition (warning) in the UX.
+Some numeric params may have a irregular range, eg. font sizes of 8,9,10,12,16,24.  These can be described with `Values: [8,9,10,12,16,24]`.
+
+If existing cfg documents contain values outside the allowed range or stepping, that is fine -- but highlight that condition (warning) in the UX.
 
 Integer values: may be signed or unsigned.  Always serialized as base-10 decimal, but accept hexadecimal input with leading 0x prefix .. eg "0x10000001" converts to 268435457.
 
-Some integer values may be enumerations.. if the description-comment contains `Values: [Low,Medium,High]` those labels can be presented, instead of 0,1,2.  (The enums will always be zero-based, unique identifiers, not combinable bitfields.)
+Some integer values may be enumerations.. if the description-comment contains `Values: [Low,Medium,High]` those labels can be presented, instead of 0,1,2.  (The enums will always be zero-based, unique identifiers, not combinable bitfields.)  The label text will typically be a few words -- suitable for a dropdown list, but too much for button text.
 
 Floating-point values: no Infinities or NaNs, and no exponential notation.  Always parsed using the "invariant" locale.. no localized radix or commas.
 
