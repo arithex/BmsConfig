@@ -469,6 +469,8 @@ namespace BmsConfig
             string typeText = "Type: " + ParamTypes.DisplayName(entry.Type);
             if (c.IsEnum)
                 typeText += "    Values: " + string.Join(", ", c.EnumLabels.Select((l, i) => i + " = " + l));
+            else if (c.NumericValues != null)
+                typeText += "    Values: " + string.Join(", ", c.NumericValues.Select(v => ValueConverter.FormatNumber(entry.Type, v)));
             else if (c.HasRange)
                 typeText += "    " + c.Describe();
             if (entry.Category == ConfigSet.UnknownCategory && entry.BmsValue == null)
@@ -497,13 +499,37 @@ namespace BmsConfig
                 ? ValueConverter.ToDisplay(entry.Type, entry.VrValue, c)
                 : (entry.VrCommentedOut ? "(none; commented out)" : "(none)");
 
+            // Values already in the files that break the constraints are kept, but flagged.
+            List<string> warnings = new List<string>();
+            AddWarning(warnings, entry, "Default", entry.BmsValue);
+            AddWarning(warnings, entry, "User.cfg", entry.UserValue);
+            AddWarning(warnings, entry, "VR.cfg", entry.VrValue);
+            DetailWarning.Text = string.Join("\n", warnings);
+            DetailWarningPanel.Visibility = warnings.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+
             // Editor
             _suppressEvents = true;
             bool isBool = entry.Type == ParamType.Bool;
             bool isEnum = entry.Type == ParamType.Int && c.IsEnum;
+            IReadOnlyList<string> choices = (!isBool && !isEnum) ? c.GetChoices(entry.Type) : null;
+            bool isChoice = choices != null;
             BoolEditor.Visibility = isBool ? Visibility.Visible : Visibility.Collapsed;
             EnumEditor.Visibility = isEnum ? Visibility.Visible : Visibility.Collapsed;
-            TextEditor.Visibility = (!isBool && !isEnum) ? Visibility.Visible : Visibility.Collapsed;
+            ChoiceEditor.Visibility = isChoice ? Visibility.Visible : Visibility.Collapsed;
+            TextEditor.Visibility = (!isBool && !isEnum && !isChoice) ? Visibility.Visible : Visibility.Collapsed;
+
+            ChoiceEditor.Children.Clear();
+            if (isChoice)
+            {
+                Style style = (Style)FindResource("ChoiceButton");
+                foreach (string token in choices)
+                {
+                    RadioButton button = new RadioButton { Content = token, Tag = token, GroupName = "ChoiceValue", Style = style };
+                    button.Click += (s, e) => OnEditorChoiceChanged();
+                    ChoiceEditor.Children.Add(button);
+                }
+                SelectChoice(entry.Type, current); // off-grid values (eg. hand-edited) leave no button selected
+            }
 
             if (isBool)
             {
@@ -541,6 +567,13 @@ namespace BmsConfig
             FillDefaultButton.IsEnabled = entry.BmsValue != null;
             SaveFeedback.Text = "";
             UpdateButtons();
+        }
+
+        static void AddWarning(List<string> warnings, ParamEntry entry, string label, string rawValue)
+        {
+            string problem = ValueConverter.CheckCfgValue(entry.Name, entry.Type, entry.Constraints, rawValue);
+            if (problem != null)
+                warnings.Add(label + " value " + ValueConverter.ToDisplay(entry.Type, rawValue, entry.Constraints) + " is not allowed.  " + problem);
         }
 
         IEnumerable<CfgFile> SaveTargets
@@ -612,8 +645,17 @@ namespace BmsConfig
                     return BoolOn.IsChecked == true ? "1" : BoolOff.IsChecked == true ? "0" : null;
                 if (EnumEditor.Visibility == Visibility.Visible)
                     return EnumEditor.SelectedIndex >= 0 ? EnumEditor.SelectedIndex.ToString() : null;
+                if (ChoiceEditor.Visibility == Visibility.Visible)
+                    return ChoiceEditor.Children.OfType<RadioButton>().Where(b => b.IsChecked == true).Select(b => (string)b.Tag).FirstOrDefault();
                 return TextEditor.Text;
             }
+        }
+
+        /// <summary>Checks the value button equivalent to the given cfg value (eg. "1" matches "1.0"), if any.</summary>
+        void SelectChoice(ParamType type, string value)
+        {
+            foreach (RadioButton button in ChoiceEditor.Children.OfType<RadioButton>())
+                button.IsChecked = value != null && ValueConverter.AreEquivalent(type, (string)button.Tag, value);
         }
 
         void OnApplyClick(object sender, RoutedEventArgs e)
@@ -653,6 +695,11 @@ namespace BmsConfig
             {
                 long? n = ValueConverter.ParseCfgInt(entry.BmsValue);
                 EnumEditor.SelectedIndex = (n.HasValue && n.Value >= 0 && n.Value < EnumEditor.Items.Count) ? (int)n.Value : -1;
+            }
+            else if (ChoiceEditor.Visibility == Visibility.Visible)
+            {
+                SelectChoice(entry.Type, entry.BmsValue);
+                OnEditorChoiceChanged();
             }
             else
             {

@@ -36,6 +36,17 @@
         <Setter Property="Foreground" Value="{DynamicResource SecondaryForeground}" />
     </Style>
 
+    <!-- Warning triangle (vector, so it doesn't depend on font glyphs being available, eg. under Wine) -->
+    <Style x:Key="WarningIcon" TargetType="Path">
+        <!-- "F0" = even-odd fill rule, so the "!" is cut out of the triangle -->
+        <Setter Property="Data" Value="F0 M 6,0 L 12,11 L 0,11 Z M 5.3,3.5 L 6.7,3.5 L 6.45,7.5 L 5.55,7.5 Z M 5.3,8.4 L 6.7,8.4 L 6.7,9.8 L 5.3,9.8 Z" />
+        <Setter Property="Fill" Value="{DynamicResource ModifiedForeground}" />
+        <Setter Property="Width" Value="12" />
+        <Setter Property="Height" Value="11" />
+        <Setter Property="Stretch" Value="None" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
     <!-- ===== Buttons ===== -->
 
     <Style TargetType="Button">
@@ -118,6 +129,41 @@
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentBackground}" />
+                            <Setter Property="Foreground" Value="{DynamicResource OnAccentForeground}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{DynamicResource DisabledForeground}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- One of a grid of value buttons (discrete numeric values) -->
+    <Style x:Key="ChoiceButton" TargetType="RadioButton">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}" />
+        <Setter Property="Foreground" Value="{DynamicResource Foreground}" />
+        <Setter Property="Background" Value="{DynamicResource ButtonBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorder}" />
+        <Setter Property="Padding" Value="18,9" />
+        <Setter Property="MinWidth" Value="72" />
+        <Setter Property="Margin" Value="0,0,10,10" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Bd" CornerRadius="4" BorderThickness="1" Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}" SnapsToDevicePixels="True">
+                        <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ButtonHoverBackground}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentBackground}" />
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBackground}" />
                             <Setter Property="Foreground" Value="{DynamicResource OnAccentForeground}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">

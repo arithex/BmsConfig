@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace BmsConfig.Core
@@ -46,13 +47,20 @@ namespace BmsConfig.Core
     }
 
     /// <summary>
-    /// Constraints parsed from a param's description text: "Range: [0-100]", "Range: [0-]", "Values: [Low,Medium,High]".
+    /// Constraints parsed from a param's description text:
+    ///   "Range: [0-100]", "Range: [0-]", "Range: [20-120, by 20]",
+    ///   "Values: [Low,Medium,High]" (labels for 0,1,2...), "Values: [8,9,10,12,16]" (the allowed numbers).
     /// </summary>
     public sealed class ParamConstraints
     {
+        /// <summary>Discrete values are offered as buttons, when there are at most this many.</summary>
+        public const int MaxChoices = 21;
+
         static readonly Regex s_range = new Regex(
-            @"Range:\s*\[\s*(?<min>[+-]?\d+(?:\.\d+)?)?\s*(?:-|\.\.|,)\s*(?<max>[+-]?\d+(?:\.\d+)?)?\s*\]",
+            @"Range:\s*\[\s*(?<min>[+-]?\d+(?:\.\d+)?)?\s*(?:-|\.\.|,)\s*(?<max>[+-]?\d+(?:\.\d+)?)?\s*(?:,\s*by\s+(?<step>\+?\d+(?:\.\d+)?)\s*)?\]",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+        static readonly Regex s_number = new Regex(@"^[+-]?(\d+\.?\d*|\.\d+)$", RegexOptions.CultureInvariant);
 
         static readonly Regex s_enum = new Regex(
             @"Values:\s*\[(?<labels>[^\]]*)\]",
@@ -62,7 +70,12 @@ namespace BmsConfig.Core
 
         public double? Min { get; private set; }
         public double? Max { get; private set; }
+        /// <summary>From "Range: [min-max, by step]": allowed values are min, min+step, min+2*step... (up to max).</summary>
+        public double? Step { get; private set; }
+        /// <summary>From "Values: [Low,Medium,High]": labels for the integer values 0,1,2...</summary>
         public IReadOnlyList<string> EnumLabels { get; private set; }
+        /// <summary>From an all-numeric "Values: [8,9,10,12,16]": the only allowed values.</summary>
+        public IReadOnlyList<double> NumericValues { get; private set; }
 
         public bool HasRange { get { return Min.HasValue || Max.HasValue; } }
         public bool IsEnum { get { return EnumLabels != null && EnumLabels.Count > 0; } }
@@ -81,6 +94,12 @@ namespace BmsConfig.Core
                     c.Min = double.Parse(m.Groups["min"].Value, CultureInfo.InvariantCulture);
                 if (m.Groups["max"].Success)
                     c.Max = double.Parse(m.Groups["max"].Value, CultureInfo.InvariantCulture);
+
+                // A step needs a starting point; a zero step is meaningless.
+                double step;
+                if (m.Groups["step"].Success && c.Min.HasValue
+                    && double.TryParse(m.Groups["step"].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out step) && step > 0)
+                    c.Step = step;
             }
 
             m = s_enum.Match(description);
@@ -90,10 +109,81 @@ namespace BmsConfig.Core
                 foreach (string s in m.Groups["labels"].Value.Split(','))
                     labels.Add(s.Trim());
                 if (labels.Count > 0 && !(labels.Count == 1 && labels[0].Length == 0))
-                    c.EnumLabels = labels;
+                {
+                    // All numbers -> the allowed values themselves; otherwise labels for 0,1,2...
+                    if (labels.TrueForAll(l => s_number.IsMatch(l)))
+                        c.NumericValues = labels.ConvertAll(l => double.Parse(l, NumberStyles.Float, CultureInfo.InvariantCulture));
+                    else
+                        c.EnumLabels = labels;
+                }
             }
 
             return c;
+        }
+
+        /// <summary>
+        /// The discrete values allowed for an int or float param (from "Values: [numbers]", or a Range with a
+        /// step), as cfg tokens -- or null if there are none, or more than MaxChoices.
+        /// </summary>
+        public IReadOnlyList<string> GetChoices(ParamType type)
+        {
+            if (type != ParamType.Int && type != ParamType.Float)
+                return null;
+
+            List<double> values = new List<double>();
+            if (NumericValues != null)
+            {
+                values.AddRange(NumericValues);
+            }
+            else if (Step.HasValue && Max.HasValue)
+            {
+                for (int i = 0; i <= MaxChoices; i++)
+                {
+                    double v = Math.Round(Min.Value + i * Step.Value, 9);
+                    if (v > Max.Value + 1e-9)
+                        break;
+                    values.Add(v);
+                }
+            }
+
+            if (values.Count == 0 || values.Count > MaxChoices)
+                return null;
+
+            List<string> tokens = new List<string>();
+            foreach (double v in values)
+            {
+                if (type == ParamType.Int && v != Math.Floor(v))
+                    continue; // eg. "Values: [1.5]" on an int param
+                string token = ValueConverter.FormatNumber(type, v);
+                if (!tokens.Contains(token))
+                    tokens.Add(token);
+            }
+            return tokens.Count > 0 ? tokens : null;
+        }
+
+        /// <summary>Is the value one of the NumericValues, and on the Step grid (if those apply)?</summary>
+        public bool IsAllowedValue(double value, out string error)
+        {
+            error = null;
+            const double tolerance = 1e-9;
+
+            if (NumericValues != null && !NumericValues.Any(v => Math.Abs(v - value) <= tolerance * Math.Max(1, Math.Abs(v))))
+            {
+                error = "Value must be one of: " + string.Join(", ", NumericValues.Select(v => v.ToString(CultureInfo.InvariantCulture))) + ".";
+                return false;
+            }
+
+            if (Step.HasValue)
+            {
+                double steps = (value - Min.Value) / Step.Value;
+                if (Math.Abs(steps - Math.Round(steps)) > 1e-6)
+                {
+                    error = "Value must be a multiple of " + Step.Value.ToString(CultureInfo.InvariantCulture)
+                        + " from " + Min.Value.ToString(CultureInfo.InvariantCulture) + ".  " + Describe();
+                    return false;
+                }
+            }
+            return true;
         }
 
         public string Describe()
@@ -103,9 +193,10 @@ namespace BmsConfig.Core
 
             string min = Min.HasValue ? Min.Value.ToString(CultureInfo.InvariantCulture) : "";
             string max = Max.HasValue ? Max.Value.ToString(CultureInfo.InvariantCulture) : "";
+            string step = Step.HasValue ? ", by " + Step.Value.ToString(CultureInfo.InvariantCulture) : "";
             if (Max.HasValue)
-                return "Range: [" + min + " to " + max + "]";
-            return Min == 0 ? "Range: [0 or greater]" : "Range: [" + min + " or greater]";
+                return "Range: [" + min + " to " + max + step + "]";
+            return Min == 0 ? "Range: [0 or greater" + step + "]" : "Range: [" + min + " or greater" + step + "]";
         }
     }
 
@@ -276,6 +367,19 @@ namespace BmsConfig.Core
             }
         }
 
+        /// <summary>
+        /// Checks a value already in a cfg file against the param's constraints (range, step, allowed values,
+        /// feature-flag syntax).  Such values are kept as-is, but flagged in the UI.  Returns the problem, or null.
+        /// </summary>
+        public static string CheckCfgValue(string name, ParamType type, ParamConstraints constraints, string rawValue)
+        {
+            if (rawValue == null || type == ParamType.Bool || type == ParamType.Unknown)
+                return null;
+
+            string token, error;
+            return TryConvertInput(name, type, constraints, ToEditText(type, rawValue), out token, out error) ? null : error;
+        }
+
         static bool TryConvertBool(string input, out string cfgToken, out string error)
         {
             cfgToken = null;
@@ -426,7 +530,15 @@ namespace BmsConfig.Core
                 error = "Value is out of range.  " + constraints.Describe();
                 return false;
             }
-            return true;
+            return constraints.IsAllowedValue(value, out error);
+        }
+
+        /// <summary>Formats a number as a cfg token: integers in decimal; floats with at least one decimal place.</summary>
+        public static string FormatNumber(ParamType type, double value)
+        {
+            if (type == ParamType.Int)
+                return ((long)Math.Round(value)).ToString(CultureInfo.InvariantCulture);
+            return Math.Round(value, 9).ToString("0.0########", CultureInfo.InvariantCulture);
         }
 
         static bool HasWhitespace(string s)

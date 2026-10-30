@@ -38,6 +38,14 @@ namespace BmsConfig
 
         public string SourceText { get { return SourceToText(Source); } }
 
+        /// <summary>Why the current value violates the param's constraints (eg. out of range), or null.</summary>
+        public string Warning
+        {
+            get { return ValueConverter.CheckCfgValue(Entry.Name, Entry.Type, Entry.Constraints, Entry.GetEffectiveValue(_includeVr)); }
+        }
+
+        public bool HasWarning { get { return Warning != null; } }
+
         /// <summary>True if the value is overridden by User.cfg (or VR.cfg, when included in the view).</summary>
         public bool IsModified
         {
