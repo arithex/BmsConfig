@@ -3,8 +3,10 @@ New Config tool for Falcon BMS -- replacement for the legacy F4Patch-based Confi
 
 ### Tenets
 
-- Modify 'Falcon BMS User.cfg' and 'Falcon BMS VR.cfg' (not 'Falcon BMS.cfg' which is overwritten with every update)
-- Treat 'Falcon BMS.cfg' as a (mostly) readonly manifest, of available cfg params (except for feature-flag params, which are only written to the BMS.cfg)
+- Modernize look & feel
+- Cover the updated set of cfg params for 4.38.x (and remove all the old dead params)
+- Save user config in 'Falcon BMS User.cfg' and 'Falcon BMS VR.cfg' (not 'Falcon BMS.cfg' which is overwritten with every update)
+- Treat 'Falcon BMS.cfg' as a (mostly) readonly manifest, of available cfg params (except for the feature-flag params, which are only written to the BMS.cfg)
 - Be an editor not a generator -- whitepace, comments and additional/undocumented params in User.cfg must remain unharmed
 - Play nice with the Launcher -- don't add or modify below the Launcher's cut-line
 
