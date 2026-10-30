@@ -471,7 +471,7 @@ namespace BmsConfig
                 typeText += "    Values: " + string.Join(", ", c.EnumLabels.Select((l, i) => i + " = " + l));
             else if (c.HasRange)
                 typeText += "    " + c.Describe();
-            if (entry.Category == ConfigSet.OtherCategory && entry.BmsValue == null)
+            if (entry.Category == ConfigSet.UnknownCategory && entry.BmsValue == null)
                 typeText += "    (not listed in " + ConfigSet.BmsFileName + ")";
             DetailType.Text = typeText;
 

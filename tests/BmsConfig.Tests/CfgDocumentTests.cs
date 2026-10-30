@@ -209,7 +209,7 @@ namespace BmsConfig.Tests
             Assert.Equal("1", known.GetEffectiveValue(true));
 
             ParamEntry experimental = set.Find("g_bExperimental");
-            Assert.Equal("Other", experimental.Category);
+            Assert.Equal("Unknown", experimental.Category);
             Assert.Equal("NOTE: off before MP", experimental.Description);
             Assert.True(experimental.UserCommentedOut);
             Assert.Null(experimental.BmsValue);
@@ -218,7 +218,7 @@ namespace BmsConfig.Tests
             Assert.True(set.Find("g_nVrOnly").VrCommentedOut);
             Assert.Null(set.Find("g_bBmsCommented"));
             Assert.Null(set.Find("g_bBelowCut"));
-            Assert.Contains("Other", set.Categories);
+            Assert.Contains("Unknown", set.Categories);
         }
 
         [Fact]
@@ -266,7 +266,7 @@ namespace BmsConfig.Tests
             CfgDocument vr = CfgDocument.Parse("set g_bA 0\n");
 
             ConfigSet set = ConfigSet.FromDocuments("x", bms, user, vr);
-            Assert.Equal(new[] { "GENERAL", "GRAPHICS", "Other" }, set.Categories);
+            Assert.Equal(new[] { "GENERAL", "GRAPHICS", "Unknown" }, set.Categories);
 
             ValueSource src;
             Assert.Equal("1", set.Find("g_bA").GetEffectiveValue(false, out src));
@@ -279,7 +279,7 @@ namespace BmsConfig.Tests
             Assert.Equal(ValueSource.Launcher, src);
 
             ParamEntry unknown = set.Find("g_nUnknown");
-            Assert.Equal("Other", unknown.Category);
+            Assert.Equal("Unknown", unknown.Category);
             Assert.Equal("something extra", unknown.Description);
 
             Assert.Equal(new[] { "Low", "Medium", "High" }, set.Find("g_nB").Constraints.EnumLabels);

@@ -86,7 +86,8 @@ namespace BmsConfig.Core
         public const string BmsFileName = "Falcon BMS.cfg";
         public const string UserFileName = "Falcon BMS User.cfg";
         public const string VrFileName = "Falcon BMS VR.cfg";
-        public const string OtherCategory = "Other";
+
+        public const string UnknownCategory = "Unknown";
 
         public string Folder { get; private set; }
         public CfgDocument Bms { get; private set; }
@@ -153,7 +154,7 @@ namespace BmsConfig.Core
             bool hasOther = false;
 
             // Falcon BMS.cfg: the manifest of params, defaults, categories and descriptions.
-            string category = OtherCategory;
+            string category = UnknownCategory;
             foreach (CfgLine line in Bms.Lines)
             {
                 if (line.Kind == CfgLineKind.Category)
@@ -166,12 +167,12 @@ namespace BmsConfig.Core
                     e.BmsValue = line.RawValue;
                     if (!string.IsNullOrEmpty(line.Description))
                         e.Description = line.Description;
-                    if (category == OtherCategory)
+                    if (category == UnknownCategory)
                         hasOther = true;
                 }
             }
 
-            // Falcon BMS User.cfg: user overrides; unknown params get filed under "Other".
+            // Falcon BMS User.cfg: user overrides; unknown params get filed under "Unknown".
             bool belowCut = false;
             foreach (CfgLine line in User.Lines)
             {
@@ -181,18 +182,18 @@ namespace BmsConfig.Core
                 }
                 else if (line.Kind == CfgLineKind.Set)
                 {
-                    ParamEntry e = GetOrAdd(line, OtherCategory);
+                    ParamEntry e = GetOrAdd(line, UnknownCategory);
                     e.UserValue = line.RawValue;
                     e.UserValueFromLauncher = belowCut;
-                    if (e.Category == OtherCategory)
+                    if (e.Category == UnknownCategory)
                         hasOther = true;
                 }
                 else if (line.Kind == CfgLineKind.CommentedSet && !belowCut)
                 {
                     // Listed even if it's not in Falcon BMS.cfg, so the user can set it again.
-                    ParamEntry e = GetOrAdd(line, OtherCategory);
+                    ParamEntry e = GetOrAdd(line, UnknownCategory);
                     e.UserCommentedOut = true;
-                    if (e.Category == OtherCategory)
+                    if (e.Category == UnknownCategory)
                         hasOther = true;
                 }
             }
@@ -202,16 +203,16 @@ namespace BmsConfig.Core
             {
                 if (line.Kind == CfgLineKind.Set)
                 {
-                    ParamEntry e = GetOrAdd(line, OtherCategory);
+                    ParamEntry e = GetOrAdd(line, UnknownCategory);
                     e.VrValue = line.RawValue;
-                    if (e.Category == OtherCategory)
+                    if (e.Category == UnknownCategory)
                         hasOther = true;
                 }
                 else if (line.Kind == CfgLineKind.CommentedSet)
                 {
-                    ParamEntry e = GetOrAdd(line, OtherCategory);
+                    ParamEntry e = GetOrAdd(line, UnknownCategory);
                     e.VrCommentedOut = true;
-                    if (e.Category == OtherCategory)
+                    if (e.Category == UnknownCategory)
                         hasOther = true;
                 }
             }
@@ -219,11 +220,11 @@ namespace BmsConfig.Core
             foreach (ParamEntry e in _entries)
             {
                 e.Constraints = ParamConstraints.Parse(e.Description);
-                if (!_categories.Contains(e.Category) && e.Category != OtherCategory)
+                if (!_categories.Contains(e.Category) && e.Category != UnknownCategory)
                     _categories.Add(e.Category);
             }
             if (hasOther)
-                _categories.Add(OtherCategory);
+                _categories.Add(UnknownCategory);
         }
 
         ParamEntry GetOrAdd(CfgLine line, string category)

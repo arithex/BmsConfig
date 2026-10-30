@@ -51,7 +51,7 @@ As a tenet, I want this app to be a "cfg file editor" not a "cfg file generator"
 
 There are 3 cfg files in play:
 - "Falcon BMS.cfg": we generally treat this as the readonly manifest of params, their baseline default values, their categories and comment/description text.
-- "Falcon BMS User.cfg": this is where the majority of user changes will be saved.  Note, it may contain additional params not present in the first file -- that is fine, we can file those under an "Other" category.
+- "Falcon BMS User.cfg": this is where the majority of user changes will be saved.  Note, it may contain additional params not present in the first file -- that is fine, we can file those under an "Unknown" category.
 - "Falcon BMS VR.cfg": these are overrides that will only apply when the game is launched in VR mode.
 
 These files all exist in the same directory -- typically the "./User/Config" subdirectory, relative to the location of Config.exe.
